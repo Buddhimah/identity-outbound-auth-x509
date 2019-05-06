@@ -41,6 +41,8 @@ public class X509CertificateConstants {
     public static final String AUTHENTICATION_ENDPOINT = "https://localhost:8443/x509-certificate-servlet";
     public static final String AUTHENTICATION_ENDPOINT_PARAMETER = "AuthenticationEndpoint";
     public static final String USERNAME = "username";
+    public static final String SUBJECT_PATTERN = "subjectPattern";
+    public static final String CERTIFICATE_ATTRIBUTE = "CertificateAttribute";
     public static final String ENFORCE_SELF_REGISTRATION = "EnforceSelfRegistration";
     public static final String SUCCESS = "success";
     public static final String RETRY_PARAM_FOR_CHECKING_CERTIFICATE =

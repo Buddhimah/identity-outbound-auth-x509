@@ -40,9 +40,15 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.cert.CertificateEncodingException;
+import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Authenticator of X509Certificate.
@@ -134,6 +140,15 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                 AuthenticatedUser authenticatedUser = getUsername(authenticationContext);
                 String userName = (String) authenticationContext.getProperty
                         (X509CertificateConstants.X509_CERTIFICATE_USERNAME);
+                //before below flow there should be a authentication using the subject alternative names
+                List<String> altNames = buildAlternativeNames(cert);
+                for (String altName : altNames){
+                    try {
+                        addOrValidateCertificate(altName, authenticationContext, data, claims, cert);
+                    } catch (AuthenticationFailedException e){
+                        continue;
+                    }
+                }
                 if (!StringUtils.isEmpty(userName)) {
                     if (log.isDebugEnabled()) {
                         log.debug("Getting X509Certificate username");
@@ -282,9 +297,30 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                 log.debug("Getting username attribute");
             }
         String userNameAttribute = getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.USERNAME);
+        //usernameAttribute becomes the certificateAttribute
+        String certificateAttribute =
+                getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.CERTIFICATE_ATTRIBUTE);
+        String subjectAttributePattern =
+                getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.SUBJECT_PATTERN);
+        //TODO: getting configuratiion from application-authentication.xml
+        Pattern p = Pattern.compile(certificateAttribute + subjectAttributePattern);
+        ClaimMapping certificateAttributeClaimKey = null;
         for (Rdn distinguishNames : ldapDN.getRdns()) {
-            claims.put(ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(),
-                    null, false), String.valueOf(distinguishNames.getValue()));
+            if (certificateAttribute == distinguishNames.getType()){
+                Matcher m = p.matcher(String.valueOf(distinguishNames.getValue()));
+                if (m.find()){
+                    certificateAttributeClaimKey = ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(),
+                            null, false);
+                    if (claims.containsKey(certificateAttributeClaimKey)){
+                        log.warn("Another match found earlier match will be replaced ");
+                    }
+                    claims.put(ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(),
+                            null, false), String.valueOf(distinguishNames.getValue()));
+                }
+            } else {
+                claims.put(ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(), null, false),
+                        String.valueOf(distinguishNames.getValue()));
+            }
             if (StringUtils.isNotEmpty(userNameAttribute)) {
                 if (userNameAttribute.equals(distinguishNames.getType())) {
                     if (log.isDebugEnabled()) {
@@ -296,7 +332,11 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                 }
             }
         }
-        return claims;
+        if (certificateAttributeClaimKey != null && claims.containsKey(certificateAttributeClaimKey)) {
+            return claims;
+        }else{
+            throw new AuthenticationFailedException("RDN did not matches with the Regex given");
+        }
     }
 
     /**
@@ -325,4 +365,22 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
     protected boolean retryAuthenticationEnabled() {
         return true;
     }
+
+
+    public List buildAlternativeNames(X509Certificate cert) {
+        List<String> elements = new ArrayList<String>();
+        //get regex pattern from application-authentication.xml
+        String certificateAttribute =
+                getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.CERTIFICATE_ATTRIBUTE);
+        try {
+            Collection<List<?>> altNames = cert.getSubjectAlternativeNames();
+            if (altNames != null) {
+                //do the regex validation and get the matching alternative names using keys and add them to elements
+            }
+        } catch (CertificateParsingException ignored) {
+        }
+        return elements;
+    }
+
+
 }
