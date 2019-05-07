@@ -316,7 +316,7 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                     certificateAttributeClaimKey = ClaimMapping
                             .build(distinguishNames.getType(), distinguishNames.getType(), null, false);
                     if (claims.containsKey(certificateAttributeClaimKey)) {
-                        log.warn("Another match found earlier match will be replaced ");
+                        throw new AuthenticationFailedException("More than one match found for the given regex");
                     }
                     regexMatched = true;
                     claims.put(ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(),
