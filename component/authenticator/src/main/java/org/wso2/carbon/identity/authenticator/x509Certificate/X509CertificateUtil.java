@@ -19,6 +19,7 @@
 
 package org.wso2.carbon.identity.authenticator.x509Certificate;
 
+import org.apache.axiom.om.OMElement;
 import org.apache.axiom.om.util.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -384,6 +385,10 @@ public class X509CertificateUtil {
                     X509CertificateConstants.USER_NOT_FOUND);
             throw new AuthenticationFailedException(" Unable to find X509 Certificate's user in user store. ");
         }
+    }
+
+    protected static boolean elementHasText(String element) {
+        return element != null && element.trim().length() != 0;
     }
 
 }
