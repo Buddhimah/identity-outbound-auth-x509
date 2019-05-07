@@ -297,31 +297,31 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                 log.debug("Getting username attribute");
             }
         String userNameAttribute = getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.USERNAME);
-        if (!X509CertificateUtil.elementHasText(userNameAttribute)){
-            userNameAttribute =
-                    getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.CERTIFICATE_ATTRIBUTE);
+        if (!X509CertificateUtil.elementHasText(userNameAttribute)) {
+            userNameAttribute = getAuthenticatorConfig().getParameterMap()
+                    .get(X509CertificateConstants.CERTIFICATE_ATTRIBUTE);
         }
-        String subjectAttributePattern =
-                getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.SUBJECT_PATTERN);
+        String subjectAttributePattern = getAuthenticatorConfig().getParameterMap()
+                .get(X509CertificateConstants.SUBJECT_PATTERN);
         Pattern p = null;
-        if(subjectAttributePattern != null){
-             p = Pattern.compile(subjectAttributePattern);
+        if (subjectAttributePattern != null) {
+            p = Pattern.compile(subjectAttributePattern);
         }
         ClaimMapping certificateAttributeClaimKey = null;
         for (Rdn distinguishNames : ldapDN.getRdns()) {
             boolean regexMatched = false;
             if (p != null && userNameAttribute.equals(distinguishNames.getType())) {
                 Matcher m = p.matcher(String.valueOf(distinguishNames.getValue()));
-                if (m.find()){
-                    certificateAttributeClaimKey = ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(),
-                            null, false);
-                    if (claims.containsKey(certificateAttributeClaimKey)){
+                if (m.find()) {
+                    certificateAttributeClaimKey = ClaimMapping
+                            .build(distinguishNames.getType(), distinguishNames.getType(), null, false);
+                    if (claims.containsKey(certificateAttributeClaimKey)) {
                         log.warn("Another match found earlier match will be replaced ");
                     }
                     regexMatched = true;
                     claims.put(ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(),
                             null, false), String.valueOf(distinguishNames.getValue()));
-            }
+                }
             } else {
                 claims.put(ClaimMapping.build(distinguishNames.getType(), distinguishNames.getType(), null, false),
                         String.valueOf(distinguishNames.getValue()));
@@ -336,7 +336,6 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                             .valueOf(distinguishNames.getValue()));
                 }
             }
-
         }
         if (p == null || (certificateAttributeClaimKey != null && claims.containsKey(certificateAttributeClaimKey))) {
             return claims;
