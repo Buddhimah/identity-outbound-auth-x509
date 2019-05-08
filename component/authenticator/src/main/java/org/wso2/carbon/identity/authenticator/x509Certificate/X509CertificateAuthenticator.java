@@ -392,7 +392,7 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
         return true;
     }
 
-    public List buildAlternativeNames(X509Certificate cert) {
+    public List buildAlternativeNames(X509Certificate cert) throws AuthenticationFailedException {
 
         List<String> elements = new ArrayList<>();
         String alternativeNamePattern = getAuthenticatorConfig().getParameterMap()
@@ -432,15 +432,18 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
             } else {
                 return Collections.emptyList();
             }
-        } catch (CertificateParsingException | IOException ignored) {
+        } catch (CertificateParsingException | IOException e) {
+            throw new AuthenticationFailedException("Failed to Parse the certificate");
+
         }
         return elements;
     }
 
-    private boolean isAuthenticatedByCert (X509Certificate cert, AuthenticationContext authenticationContext){
-        if (authenticationContext.getSubject().getAuthenticatedSubjectIdentifier().equals(cert.getSerialNumber().toString())){
+    private boolean isAuthenticatedByCert(X509Certificate cert, AuthenticationContext authenticationContext) {
+        if (authenticationContext.getSubject().getAuthenticatedSubjectIdentifier()
+                .equals(cert.getSerialNumber().toString())) {
             return true;
-        }else{
+        } else {
             return false;
         }
 
