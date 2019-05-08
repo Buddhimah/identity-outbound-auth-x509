@@ -149,38 +149,51 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                         (X509CertificateConstants.X509_CERTIFICATE_USERNAME);
                 //before below flow there should be a authentication using the subject alternative names
                 List<String> altNames = buildAlternativeNames(cert);
-                for (String altName : altNames){
+                altNames.add(userName);
+                for (int i = 0 ; i < altNames.size() ; i++) {
+                    String subject = altNames.get(i);
                     try {
-                        addOrValidateCertificate(altName, authenticationContext, data, claims, cert);
-                    } catch (AuthenticationFailedException e){
-                        continue;
-                    }
-                }
-                if (!StringUtils.isEmpty(userName)) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Getting X509Certificate username");
-                    }
-                    if (authenticatedUser != null) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Authenticated username is: " + authenticatedUser);
-                        }
-                        String authenticatedUserName = authenticatedUser.getAuthenticatedSubjectIdentifier();
-                        if (authenticatedUserName.equals(userName)) {
-                            addOrValidateCertificate(userName, authenticationContext, data, claims, cert);
+                        if (!StringUtils.isEmpty(subject)) {
+                            if (log.isDebugEnabled()) {
+                                log.debug("Getting X509Certificate username");
+                            }
+                            if (authenticatedUser != null) {
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Authenticated username is: " + authenticatedUser);
+                                }
+                                String authenticatedUserName = authenticatedUser.getAuthenticatedSubjectIdentifier();
+                                if (authenticatedUserName.equals(subject)) {
+                                    addOrValidateCertificate(subject, authenticationContext, data, claims, cert);
+                                    if (isAuthenticatedByCert(cert,authenticationContext)){
+                                        break;
+                                    }
+                                } else {
+                                    authenticationContext
+                                            .setProperty(X509CertificateConstants.X509_CERTIFICATE_ERROR_CODE,
+                                                    X509CertificateConstants.USERNAME_CONFLICT);
+                                    throw new AuthenticationFailedException(
+                                            "Couldn't find X509 certificate to " + "this authenticated user: "
+                                                    + authenticatedUserName);
+                                }
+                            } else {
+                                addOrValidateCertificate(subject, authenticationContext, data, claims, cert);
+                                if (isAuthenticatedByCert(cert,authenticationContext)){
+                                    break;
+                                }
+                            }
                         } else {
                             authenticationContext.setProperty(X509CertificateConstants.X509_CERTIFICATE_ERROR_CODE,
-                                    X509CertificateConstants.USERNAME_CONFLICT);
-                            throw new AuthenticationFailedException("Couldn't find X509 certificate to " +
-                                    "this authenticated user: " + authenticatedUserName);
+                                    X509CertificateConstants.USERNAME_NOT_FOUND_FOR_X509_CERTIFICATE_ATTRIBUTE);
+                            throw new AuthenticationFailedException(
+                                    "Couldn't find the username for X509Certificate's " + "attribute");
                         }
-                    } else {
-                        addOrValidateCertificate(userName, authenticationContext, data, claims, cert);
+                    } catch (AuthenticationFailedException e) {
+                        if (i == altNames.size() - 1) {
+                            throw e;
+                        } else {
+                            continue;
+                        }
                     }
-                } else {
-                    authenticationContext.setProperty(X509CertificateConstants.X509_CERTIFICATE_ERROR_CODE,
-                            X509CertificateConstants.USERNAME_NOT_FOUND_FOR_X509_CERTIFICATE_ATTRIBUTE);
-                    throw new AuthenticationFailedException("Couldn't find the username for X509Certificate's " +
-                            "attribute");
                 }
             } else {
                 throw new AuthenticationFailedException("X509Certificate object is null");
@@ -422,6 +435,15 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
         } catch (CertificateParsingException | IOException ignored) {
         }
         return elements;
+    }
+
+    private boolean isAuthenticatedByCert (X509Certificate cert, AuthenticationContext authenticationContext){
+        if (authenticationContext.getSubject().getAuthenticatedSubjectIdentifier().equals(cert.getSerialNumber().toString())){
+            return true;
+        }else{
+            return false;
+        }
+
     }
 
 
