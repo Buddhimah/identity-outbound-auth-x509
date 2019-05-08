@@ -19,9 +19,15 @@
 
 package org.wso2.carbon.identity.authenticator.x509Certificate;
 
+import edu.emory.mathcs.backport.java.util.Collections;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.ssl.asn1.ASN1InputStream;
+import org.apache.commons.ssl.asn1.DEREncodable;
+import org.apache.commons.ssl.asn1.DERSequence;
+import org.apache.commons.ssl.asn1.DERTaggedObject;
+import org.apache.commons.ssl.asn1.DERUTF8String;
 import org.wso2.carbon.identity.application.authentication.framework.AbstractApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.LocalApplicationAuthenticator;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
@@ -45,6 +51,7 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -372,18 +379,47 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
         return true;
     }
 
-
     public List buildAlternativeNames(X509Certificate cert) {
-        List<String> elements = new ArrayList<String>();
-        //get regex pattern from application-authentication.xml
-        String certificateAttribute =
-                getAuthenticatorConfig().getParameterMap().get(X509CertificateConstants.CERTIFICATE_ATTRIBUTE);
+
+        List<String> elements = new ArrayList<>();
+        String alternativeNamePattern = getAuthenticatorConfig().getParameterMap()
+                .get(X509CertificateConstants.AlTN_PATTERN);
         try {
             Collection<List<?>> altNames = cert.getSubjectAlternativeNames();
             if (altNames != null) {
-                //do the regex validation and get the matching alternative names using keys and add them to elements
+                Pattern p = null;
+                if (alternativeNamePattern != null) {
+                    p = Pattern.compile(alternativeNamePattern);
+                    for (List item : altNames) {
+                        ASN1InputStream decoder = null;
+                        if (item.toArray()[1] instanceof byte[])
+                            decoder = new ASN1InputStream((byte[]) item.toArray()[1]);
+                        else if (item.toArray()[1] instanceof String) {
+                            Matcher m = p.matcher((String)item.toArray()[1]);
+                            if (m.find()) {
+                                elements.add((String) item.toArray()[1]);
+                            }
+
+                        }
+                        if (decoder == null)
+                            continue;
+                        DEREncodable encoded = decoder.readObject();
+                        encoded = ((DERSequence) encoded).getObjectAt(1);
+                        encoded = ((DERTaggedObject) encoded).getObject();
+                        encoded = ((DERTaggedObject) encoded).getObject();
+                        String identity = ((DERUTF8String) encoded).getString();
+                        Matcher m = p.matcher(identity);
+                        if (m.find()) {
+                            elements.add(identity);
+                        }
+                        elements.add(identity);
+                    }
+
+                }
+            } else {
+                return Collections.emptyList();
             }
-        } catch (CertificateParsingException ignored) {
+        } catch (CertificateParsingException | IOException ignored) {
         }
         return elements;
     }
