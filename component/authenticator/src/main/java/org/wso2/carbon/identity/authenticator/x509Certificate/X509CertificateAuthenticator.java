@@ -429,8 +429,6 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                     }
 
                 }
-            } else {
-                return Collections.emptyList();
             }
         } catch (CertificateParsingException | IOException e) {
             throw new AuthenticationFailedException("Failed to Parse the certificate");
