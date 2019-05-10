@@ -19,7 +19,6 @@
 
 package org.wso2.carbon.identity.authenticator.x509Certificate;
 
-
 import org.apache.axiom.om.util.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
