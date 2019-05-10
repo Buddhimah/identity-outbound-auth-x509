@@ -19,7 +19,7 @@
 
 package org.wso2.carbon.identity.authenticator.x509Certificate;
 
-import org.apache.axiom.om.OMElement;
+
 import org.apache.axiom.om.util.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -41,15 +41,10 @@ import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 /**
  * Working with certificate and claims store.
@@ -179,7 +174,6 @@ public class X509CertificateUtil {
         }
         return true;
     }
-
 
     /**
      * Check availability of certificate.
@@ -343,6 +337,5 @@ public class X509CertificateUtil {
             throw new AuthenticationFailedException(" Unable to find X509 Certificate's user in user store. ");
         }
     }
-
 
 }
