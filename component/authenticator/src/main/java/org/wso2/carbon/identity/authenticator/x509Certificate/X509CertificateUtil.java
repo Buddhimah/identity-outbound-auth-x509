@@ -180,49 +180,6 @@ public class X509CertificateUtil {
         return true;
     }
 
-    /**
-     * Validate the user certificate
-     *
-     * @param userName         name of the user
-     * @param certificateBytes x509 certificate
-     * @return boolean status of the action
-     * @throws AuthenticationFailedException
-     */
-    public static boolean validateCertificateForSubjectAlt(String userName, AuthenticationContext authenticationContext,
-            byte[] certificateBytes, boolean isSelfRegistrationEnable)
-            throws AuthenticationFailedException {
-        X509Certificate x509Certificate;
-        try {
-            CertificateFactory cf = CertificateFactory.getInstance("X509");
-            x509Certificate = (X509Certificate) cf.generateCertificate(new ByteArrayInputStream(certificateBytes));
-            X509Certificate certFromUserClaim = getCertificate(userName);
-            boolean isCertExists = (certFromUserClaim != null);
-            if (isSelfRegistrationEnable && isCertExists && certFromUserClaim.equals(x509Certificate)) {
-                return false;
-            } else if (!isSelfRegistrationEnable && !isUserExists(userName, authenticationContext)) {
-                return false;
-            }
-            if (isCertificateRevoked(x509Certificate)) {
-                if (log.isDebugEnabled()) {
-                    log.debug("X509 certificate with serial num: " + x509Certificate.getSerialNumber() +
-                            " is revoked");
-                }
-                if (isSelfRegistrationEnable) {
-                    deleteUserCertificate(userName, x509Certificate);
-                }
-                return false;
-            } else if (isSelfRegistrationEnable && isCertExists) {
-                addUserCertificate(userName, x509Certificate);
-            }
-        } catch (CertificateException e) {
-            throw new AuthenticationFailedException("Error while retrieving certificate ", e);
-        } catch (CertificateValidationException e) {
-            throw new AuthenticationFailedException("Error while validating client certificate with serial num: ", e);
-        } catch (UserStoreException e) {
-            throw new AuthenticationFailedException("Cannot find the user realm for the username: " + userName, e);
-        }
-        return true;
-    }
 
     /**
      * Check availability of certificate.
@@ -387,8 +344,5 @@ public class X509CertificateUtil {
         }
     }
 
-    protected static boolean elementHasText(String element) {
-        return element != null && element.trim().length() != 0;
-    }
 
 }

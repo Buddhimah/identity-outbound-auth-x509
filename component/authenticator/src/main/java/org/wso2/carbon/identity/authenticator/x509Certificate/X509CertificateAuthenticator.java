@@ -323,8 +323,16 @@ public class X509CertificateAuthenticator extends AbstractApplicationAuthenticat
                         log.debug("Setting X509Certificate username attribute: " + userNameAttribute
                                 + "and value is " + distinguishNames.getValue());
                     }
-                    authenticationContext.setProperty(X509CertificateConstants.X509_CERTIFICATE_USERNAME,
-                            matchedString);
+                    if (regexMatched){
+                        authenticationContext
+                                .setProperty(X509CertificateConstants.X509_CERTIFICATE_USERNAME, matchedString);
+
+                    }else{
+                        authenticationContext
+                                .setProperty(X509CertificateConstants.X509_CERTIFICATE_USERNAME, String.valueOf(distinguishNames.getValue()));
+                    }
+
+
                 }
             }
         }
